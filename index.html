@@ -232,6 +232,61 @@ input[type="file"] { display: none; }
 .lib-status.ok   { color: var(--mint); border-color: rgba(0,217,163,.25); }
 .lib-status.fail { color: var(--coral); border-color: rgba(255,107,107,.25); }
 
+/* ── DIFFICULTY SELECTOR ── */
+.difficulty-section {
+  margin: 0 16px 16px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.difficulty-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--txt-dim);
+  margin-bottom: 10px;
+}
+.difficulty-label span:last-child {
+  font-weight: 700;
+  color: var(--mint);
+}
+.difficulty-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+}
+.difficulty-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--mint);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,217,163,.4);
+}
+.difficulty-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--mint);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,217,163,.4);
+}
+.difficulty-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--txt-muted);
+  text-align: center;
+}
+
 /* ── TOAST ── */
 .toast {
   position: fixed; top: 70px; left: 50%;
@@ -313,6 +368,16 @@ input[type="file"] { display: none; }
 <!-- CSV 状态 -->
 <div class="lib-status" id="libStatus"></div>
 
+<!-- DIFFICULTY SELECTOR -->
+<div class="difficulty-section">
+  <div class="difficulty-label">
+    <span>游戏难度</span>
+    <span id="difficultyName">简单</span>
+  </div>
+  <input type="range" class="difficulty-slider" id="difficultySlider" min="0" max="2" value="0">
+  <div class="difficulty-hint" id="difficultyHint">提示间隔 5 秒</div>
+</div>
+
 <!-- DIVIDER + UPLOAD -->
 <div class="divider-row">导入题库</div>
 <div class="import-section">
@@ -345,7 +410,15 @@ input[type="file"] { display: none; }
 // ══════ CONFIG ══════
 const GRID_SIZE  = 10;
 const TOTAL_TIME = 180;
-const IDLE_WARN  = 20;
+
+// 难度配置：简单 5s，中等 10s，困难 20s
+const DIFFICULTY = {
+  0: { name: '简单', hint: 5 },
+  1: { name: '中等', hint: 10 },
+  2: { name: '困难', hint: 20 },
+};
+let currentDifficulty = 0; // 默认简单
+let IDLE_WARN = DIFFICULTY[0].hint;
 
 const DEFAULT_LIB = [
   ['apple',['苹果','苹果树']], ['book',['书','书本','书籍']], ['cat',['猫','猫咪']],
@@ -718,6 +791,19 @@ function resetGame() {
   renderGrid(); renderChips(); startTimer(); bumpIdle(); startIdleWatch();
   window.scrollTo(0, 0);
 }
+
+// ══════ DIFFICULTY SELECTOR ══════
+document.getElementById('difficultySlider').addEventListener('input', e => {
+  currentDifficulty = parseInt(e.target.value);
+  IDLE_WARN = DIFFICULTY[currentDifficulty].hint;
+  document.getElementById('difficultyName').textContent = DIFFICULTY[currentDifficulty].name;
+  document.getElementById('difficultyHint').textContent = `提示间隔 ${IDLE_WARN} 秒`;
+  // 如果游戏进行中，重启 idle 监视器
+  if (placedWords.length && !paused) {
+    bumpIdle();
+    startIdleWatch();
+  }
+});
 
 // ══════ AUTO-LOAD CET4 CSV ══════
 // 先用默认词库启动，再异步加载 CET4 词库
