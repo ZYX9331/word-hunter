@@ -52,13 +52,6 @@ abandon,v. 放弃，抛弃
 
 ---
 
-## 🛠 技术栈
-
-- 纯 HTML + CSS + JavaScript，单文件无依赖
-- Google Fonts：Righteous / Space Mono / Noto Sans SC
-- 适配移动端（iOS / Android）
-
----
 
 ## 📱 移动端使用
 
@@ -68,7 +61,7 @@ abandon,v. 放弃，抛弃
 
 ---
 
-## 🔧 本地开发
+## 🔧 本地修改
 
 ```bash
 # 启动本地服务器（解决 CSV 跨域问题）
