@@ -161,42 +161,6 @@ body {
 }
 .cell.hint { animation: cell-hint 0.7s ease 4; }
 
-/* ── KEYBOARD ── */
-.keyboard-section {
-  display: none; /* 默认隐藏，桌面端不显示 */
-  background: #d1d5db;
-  padding: 6px 4px 8px;
-  gap: 4px;
-  flex-shrink: 0;
-}
-.kb-row {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-}
-.kb-key {
-  min-width: 32px;
-  height: 42px;
-  border: none;
-  border-radius: 4px;
-  background: #fff;
-  font-size: 16px;
-  font-family: inherit;
-  color: #333;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-.kb-key:active { background: #9ca3af; }
-.kb-key-wide { min-width: 50px; }
-.kb-key-space { flex: 1; max-width: 180px; }
-
-/* 移动端显示键盘 */
-@media (max-width: 768px) {
-  .keyboard-section { display: block; }
-}
-
 /* ── INPUT SECTION ── */
 .input-section { 
   padding: 14px 16px 8px; 
@@ -229,7 +193,7 @@ body {
 .input-field.shake { animation: shake .35s ease; border-color: var(--coral); box-shadow: 0 0 0 3px var(--coral-dim); }
 @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)} 80%{transform:translateX(-3px)} }
 
-.submit-btn {
+.submit-btn, .mic-btn {
   width: 48px; height: 48px; border-radius: 50%;
   background: var(--mint); border: none;
   display: flex; align-items: center; justify-content: center;
@@ -237,7 +201,16 @@ body {
   color: #0f1923; transition: transform .15s, opacity .15s;
   touch-action: manipulation;
 }
-.submit-btn:active { transform: scale(.92); opacity: .85; }
+.mic-btn { background: var(--accent); color: #fff; }
+.mic-btn.listening {
+  background: #ef4444;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.submit-btn:active, .mic-btn:active { transform: scale(.92); opacity: .85; }
 
 .feedback-row {
   min-height: 20px; margin-top: 8px;
@@ -414,57 +387,17 @@ input[type="file"] { display: none; }
 <div class="input-section">
   <div class="input-card">
     <div class="input-row">
-      <!-- 移动端使用内嵌键盘，所以禁用系统键盘 -->
       <input class="input-field" id="answerInput" type="text"
-        placeholder="点击下方键盘输入" autocomplete="off" autocorrect="off"
-        autocapitalize="none" spellcheck="false" readonly
-        onclick="this.blur()">
+        placeholder="输入中文释义…" autocomplete="off" autocorrect="off"
+        autocapitalize="none" spellcheck="false" enterkeyhint="done">
+      <button class="mic-btn" id="micBtn" onclick="toggleSpeech()">🎤</button>
       <button class="submit-btn" onclick="checkAnswer()">↩</button>
     </div>
     <div class="feedback-row" id="feedback"></div>
   </div>
 </div>
 
-<!-- 内嵌拼音键盘 -->
-<div class="keyboard-section" id="keyboard">
-  <div class="kb-row">
-    <button class="kb-key" onclick="kbInput('q')">q</button>
-    <button class="kb-key" onclick="kbInput('w')">w</button>
-    <button class="kb-key" onclick="kbInput('e')">e</button>
-    <button class="kb-key" onclick="kbInput('r')">r</button>
-    <button class="kb-key" onclick="kbInput('t')">t</button>
-    <button class="kb-key" onclick="kbInput('y')">y</button>
-    <button class="kb-key" onclick="kbInput('u')">u</button>
-    <button class="kb-key" onclick="kbInput('i')">i</button>
-    <button class="kb-key" onclick="kbInput('o')">o</button>
-    <button class="kb-key" onclick="kbInput('p')">p</button>
-  </div>
-  <div class="kb-row">
-    <button class="kb-key" onclick="kbInput('a')">a</button>
-    <button class="kb-key" onclick="kbInput('s')">s</button>
-    <button class="kb-key" onclick="kbInput('d')">d</button>
-    <button class="kb-key" onclick="kbInput('f')">f</button>
-    <button class="kb-key" onclick="kbInput('g')">g</button>
-    <button class="kb-key" onclick="kbInput('h')">h</button>
-    <button class="kb-key" onclick="kbInput('j')">j</button>
-    <button class="kb-key" onclick="kbInput('k')">k</button>
-    <button class="kb-key" onclick="kbInput('l')">l</button>
-  </div>
-  <div class="kb-row">
-    <button class="kb-key kb-key-wide" onclick="kbInput('⇧')">⇧</button>
-    <button class="kb-key" onclick="kbInput('z')">z</button>
-    <button class="kb-key" onclick="kbInput('x')">x</button>
-    <button class="kb-key" onclick="kbInput('c')">c</button>
-    <button class="kb-key" onclick="kbInput('v')">v</button>
-    <button class="kb-key" onclick="kbInput('b')">b</button>
-    <button class="kb-key" onclick="kbInput('n')">n</button>
-    <button class="kb-key" onclick="kbInput('m')">m</button>
-    <button class="kb-key kb-key-wide" onclick="kbBackspace()">⌫</button>
-  </div>
-  <div class="kb-row">
-    <button class="kb-key kb-key-space" onclick="kbInput(' ')">空格</button>
-  </div>
-</div>
+
 
 <!-- CSV 状态 -->
 <div class="lib-status" id="libStatus"></div>
@@ -775,33 +708,68 @@ document.getElementById('answerInput').addEventListener('keydown', e => {
 });
 document.getElementById('answerInput').addEventListener('input', bumpIdle);
 
-// ══════ 内嵌键盘 ══════
-let kbShift = false;
-function kbInput(ch) {
-  const inp = document.getElementById('answerInput');
-  if (ch === '⇧') {
-    kbShift = !kbShift;
-    document.querySelectorAll('.kb-key').forEach(k => {
-      if (k.textContent.length === 1) {
-        k.textContent = kbShift ? k.textContent.toUpperCase() : k.textContent.toLowerCase();
-      }
-    });
+// ══════ 语音识别 ══════
+let recognition = null;
+let isListening = false;
+
+function initSpeech() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('您的浏览器不支持语音识别', 'fail');
     return;
   }
-  const char = kbShift ? ch.toUpperCase() : ch;
-  inp.value += char;
-  if (kbShift) {
-    kbShift = false;
-    document.querySelectorAll('.kb-key').forEach(k => {
-      if (k.textContent.length === 1) k.textContent = k.textContent.toLowerCase();
-    });
-  }
-  bumpIdle();
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'zh-CN';
+
+  recognition.onresult = (event) => {
+    let finalTranscript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      }
+    }
+    if (finalTranscript) {
+      document.getElementById('answerInput').value = finalTranscript;
+      checkAnswer();
+    }
+  };
+
+  recognition.onerror = (event) => {
+    stopListening();
+    if (event.error !== 'no-speech') {
+      showToast('语音识别出错: ' + event.error, 'fail');
+    }
+  };
+
+  recognition.onend = () => {
+    stopListening();
+  };
 }
-function kbBackspace() {
-  const inp = document.getElementById('answerInput');
-  inp.value = inp.value.slice(0, -1);
-  bumpIdle();
+
+function toggleSpeech() {
+  if (!recognition) initSpeech();
+  if (!recognition) return;
+
+  if (isListening) {
+    recognition.stop();
+  } else {
+    try {
+      recognition.start();
+      isListening = true;
+      document.getElementById('micBtn').classList.add('listening');
+      showToast('请说话…', 'ok');
+    } catch (e) {
+      showToast('启动语音失败', 'fail');
+    }
+  }
+}
+
+function stopListening() {
+  isListening = false;
+  const btn = document.getElementById('micBtn');
+  if (btn) btn.classList.remove('listening');
 }
 
 function setFeedback(msg, type) {
