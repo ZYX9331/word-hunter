@@ -2,7 +2,7 @@
 
 一款轻量级的英语单词益智游戏，在 10×10 字母格子中找出隐藏的单词，输入中文释义即可通关。
 
-**在线游玩**：https://zhangyx.github.io/word-hunter/
+**在线游玩**：https://zyx9331.github.io/word-hunter/
 
 ---
 
