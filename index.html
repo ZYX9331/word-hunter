@@ -39,7 +39,7 @@ body {
   font-family: 'Noto Sans SC', sans-serif;
   max-width: 500px;
   margin: 0 auto;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   -webkit-font-smoothing: antialiased;
@@ -152,14 +152,18 @@ body {
 
 /* ── INPUT SECTION ── */
 .input-section { 
-  padding: 14px 16px 8px; 
-  flex-shrink: 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  z-index: 100;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-.input-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px;
-}
 .input-row { display: flex; gap: 10px; align-items: center; }
 
 .input-field {
@@ -688,16 +692,6 @@ document.getElementById('answerInput').addEventListener('keydown', e => {
   bumpIdle();
 });
 document.getElementById('answerInput').addEventListener('input', bumpIdle);
-
-// ══════ 移动端键盘适配 ══════
-// 使用 visualViewport API 监听键盘弹出，自动滚动到输入框
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
-    if (document.activeElement === document.getElementById('answerInput')) {
-      document.getElementById('answerInput').scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-  });
-}
 
 // ══════ 语音识别 ══════
 let recognition = null;
