@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0f1923">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -162,6 +162,7 @@ body {
   z-index: 100;
   max-width: 500px;
   margin: 0 auto;
+  border-top: 1px solid var(--border);
 }
 
 .input-row { display: flex; gap: 10px; align-items: center; }
@@ -925,6 +926,55 @@ resetGame();
     .catch(() => {
       // file:// 协议下无法加载，静默忽略，使用默认词库
     });
+})();
+</script>
+
+<script>
+// ══════ 移动端键盘适配（独立脚本块，确保在 DOM 之后） ══════
+(function() {
+  const inputSection = document.querySelector('.input-section');
+  if (!inputSection) return;
+
+  // 阻止页面被键盘顶上去：监听 touchmove 阻止过度滚动
+  document.body.addEventListener('touchmove', function(e) {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+      // 输入框聚焦时，只允许在 visualViewport 范围内滚动
+      // 不阻止默认行为，让系统自己处理
+    }
+  }, { passive: true });
+
+  // 用 visualViewport API 动态定位输入框
+  if (window.visualViewport) {
+    function updateInputPosition() {
+      const vv = window.visualViewport;
+      // 输入框贴在 visualViewport 底部
+      inputSection.style.position = 'fixed';
+      inputSection.style.top = (vv.top + vv.height - inputSection.offsetHeight) + 'px';
+      inputSection.style.left = '0';
+      inputSection.style.width = '100%';
+    }
+
+    // 输入框聚焦时开始监听
+    const answerInput = document.getElementById('answerInput');
+    let active = false;
+
+    answerInput.addEventListener('focus', function() {
+      active = true;
+      updateInputPosition();
+      window.visualViewport.addEventListener('resize', updateInputPosition);
+      window.visualViewport.addEventListener('scroll', updateInputPosition);
+    });
+
+    answerInput.addEventListener('blur', function() {
+      active = false;
+      // 恢复到正常底部
+      inputSection.style.position = 'fixed';
+      inputSection.style.top = '';
+      inputSection.style.bottom = '0';
+      window.visualViewport.removeEventListener('resize', updateInputPosition);
+      window.visualViewport.removeEventListener('scroll', updateInputPosition);
+    });
+  }
 })();
 </script>
 </body>
