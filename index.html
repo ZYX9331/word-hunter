@@ -31,9 +31,9 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-html { height: 100%; overflow: hidden; }
+html { height: 100%; }
 body {
-  height: 100%;
+  min-height: 100%;
   background: var(--bg);
   color: var(--txt);
   font-family: 'Noto Sans SC', sans-serif;
@@ -43,17 +43,6 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   -webkit-font-smoothing: antialiased;
-  display: flex; flex-direction: column;
-}
-
-/* 主内容区：键盘弹出时允许滚动 */
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 /* ── TOP BAR ── */
@@ -165,11 +154,6 @@ body {
 .input-section { 
   padding: 14px 16px 8px; 
   flex-shrink: 0;
-  /* 移动端固定在底部，键盘弹出时保持可见 */
-  position: sticky;
-  bottom: 0;
-  background: var(--bg);
-  z-index: 20;
 }
 
 .input-card {
@@ -366,8 +350,6 @@ input[type="file"] { display: none; }
 </head>
 <body>
 
-<div class="main-content">
-
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-btn" id="pauseBtn" onclick="togglePause()">⏸</div>
@@ -385,16 +367,15 @@ input[type="file"] { display: none; }
 
 <!-- INPUT -->
 <div class="input-section">
-  <div class="input-card">
-    <div class="input-row">
-      <input class="input-field" id="answerInput" type="text"
-        placeholder="输入中文释义…" autocomplete="off" autocorrect="off"
-        autocapitalize="none" spellcheck="false" enterkeyhint="done">
-      <button class="mic-btn" id="micBtn" onclick="toggleSpeech()">🎤</button>
-      <button class="submit-btn" onclick="checkAnswer()">↩</button>
-    </div>
-    <div class="feedback-row" id="feedback"></div>
+  <div class="input-row">
+    <input class="input-field" id="answerInput" type="text"
+      placeholder="输入中文释义或点击🎤语音" autocomplete="off" autocorrect="off"
+      autocapitalize="none" spellcheck="false" enterkeyhint="done"
+      inputmode="text">
+    <button class="mic-btn" id="micBtn" onclick="toggleSpeech()">🎤</button>
+    <button class="submit-btn" onclick="checkAnswer()">↩</button>
   </div>
+  <div class="feedback-row" id="feedback"></div>
 </div>
 
 
@@ -707,6 +688,16 @@ document.getElementById('answerInput').addEventListener('keydown', e => {
   bumpIdle();
 });
 document.getElementById('answerInput').addEventListener('input', bumpIdle);
+
+// ══════ 移动端键盘适配 ══════
+// 使用 visualViewport API 监听键盘弹出，自动滚动到输入框
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (document.activeElement === document.getElementById('answerInput')) {
+      document.getElementById('answerInput').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  });
+}
 
 // ══════ 语音识别 ══════
 let recognition = null;
