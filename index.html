@@ -704,32 +704,47 @@ function initSpeech() {
     return;
   }
   recognition = new SpeechRecognition();
-  recognition.continuous = false;
+  recognition.continuous = true;
   recognition.interimResults = true;
   recognition.lang = 'zh-CN';
 
   recognition.onresult = (event) => {
-    let finalTranscript = '';
+    let finalText = '';
+    let interimText = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
       if (event.results[i].isFinal) {
-        finalTranscript += event.results[i][0].transcript;
+        finalText += t;
+      } else {
+        interimText += t;
       }
     }
-    if (finalTranscript) {
-      document.getElementById('answerInput').value = finalTranscript;
-      checkAnswer();
+    // 实时显示正在识别的文字
+    const inp = document.getElementById('answerInput');
+    if (interimText) inp.value = interimText;
+    // 最终结果：填入并自动提交
+    if (finalText) {
+      inp.value = finalText;
+      bumpIdle();
     }
   };
 
   recognition.onerror = (event) => {
-    stopListening();
-    if (event.error !== 'no-speech') {
+    // no-speech 和 aborted 不提示，其他才报错
+    if (event.error !== 'no-speech' && event.error !== 'aborted') {
       showToast('语音识别出错: ' + event.error, 'fail');
+    }
+    // 如果还在监听模式，自动重启
+    if (isListening) {
+      try { recognition.start(); } catch(e) {}
     }
   };
 
   recognition.onend = () => {
-    stopListening();
+    // 如果用户没手动关闭，自动重启保持持续监听
+    if (isListening) {
+      try { recognition.start(); } catch(e) {}
+    }
   };
 }
 
@@ -738,15 +753,18 @@ function toggleSpeech() {
   if (!recognition) return;
 
   if (isListening) {
-    recognition.stop();
+    isListening = false;
+    try { recognition.stop(); } catch(e) {}
+    document.getElementById('micBtn').classList.remove('listening');
+    showToast('语音已关闭', 'fail');
   } else {
     try {
       recognition.start();
       isListening = true;
       document.getElementById('micBtn').classList.add('listening');
-      showToast('请说话…', 'ok');
+      showToast('🎤 持续监听中，请说话…', 'ok');
     } catch (e) {
-      showToast('启动语音失败', 'fail');
+      showToast('启动语音失败，请用Chrome浏览器', 'fail');
     }
   }
 }
