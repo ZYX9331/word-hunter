@@ -182,7 +182,7 @@ body {
 .input-field.shake { animation: shake .35s ease; border-color: var(--coral); box-shadow: 0 0 0 3px var(--coral-dim); }
 @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)} 80%{transform:translateX(-3px)} }
 
-.submit-btn, .mic-btn {
+.submit-btn {
   width: 48px; height: 48px; border-radius: 50%;
   background: var(--mint); border: none;
   display: flex; align-items: center; justify-content: center;
@@ -190,16 +190,7 @@ body {
   color: #0f1923; transition: transform .15s, opacity .15s;
   touch-action: manipulation;
 }
-.mic-btn { background: var(--accent); color: #fff; }
-.mic-btn.listening {
-  background: #ef4444;
-  animation: pulse 1s infinite;
-}
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-.submit-btn:active, .mic-btn:active { transform: scale(.92); opacity: .85; }
+.submit-btn:active { transform: scale(.92); opacity: .85; }
 
 .feedback-row {
   min-height: 20px; margin-top: 8px;
@@ -377,8 +368,7 @@ input[type="file"] { display: none; }
       placeholder="输入中文释义或点击🎤语音" autocomplete="off" autocorrect="off"
       autocapitalize="none" spellcheck="false" enterkeyhint="done"
       inputmode="text">
-    <button class="mic-btn" id="micBtn" onclick="toggleSpeech()">🎤</button>
-    <button class="submit-btn" onclick="checkAnswer()">↩</button>
+      <button class="submit-btn" onclick="checkAnswer()">↩</button>
   </div>
   <div class="feedback-row" id="feedback"></div>
 </div>
@@ -694,88 +684,6 @@ document.getElementById('answerInput').addEventListener('keydown', e => {
 });
 document.getElementById('answerInput').addEventListener('input', bumpIdle);
 
-// ══════ 语音识别 ══════
-let recognition = null;
-let isListening = false;
-
-function initSpeech() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showToast('您的浏览器不支持语音识别', 'fail');
-    return;
-  }
-  recognition = new SpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = 'zh-CN';
-
-  recognition.onresult = (event) => {
-    let finalText = '';
-    let interimText = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const t = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        finalText += t;
-      } else {
-        interimText += t;
-      }
-    }
-    // 实时显示正在识别的文字
-    const inp = document.getElementById('answerInput');
-    if (interimText) inp.value = interimText;
-    // 最终结果：填入并自动提交
-    if (finalText) {
-      inp.value = finalText;
-      bumpIdle();
-    }
-  };
-
-  recognition.onerror = (event) => {
-    // no-speech 和 aborted 不提示，其他才报错
-    if (event.error !== 'no-speech' && event.error !== 'aborted') {
-      showToast('语音识别出错: ' + event.error, 'fail');
-    }
-    // 如果还在监听模式，自动重启
-    if (isListening) {
-      try { recognition.start(); } catch(e) {}
-    }
-  };
-
-  recognition.onend = () => {
-    // 如果用户没手动关闭，自动重启保持持续监听
-    if (isListening) {
-      try { recognition.start(); } catch(e) {}
-    }
-  };
-}
-
-function toggleSpeech() {
-  if (!recognition) initSpeech();
-  if (!recognition) return;
-
-  if (isListening) {
-    isListening = false;
-    try { recognition.stop(); } catch(e) {}
-    document.getElementById('micBtn').classList.remove('listening');
-    showToast('语音已关闭', 'fail');
-  } else {
-    try {
-      recognition.start();
-      isListening = true;
-      document.getElementById('micBtn').classList.add('listening');
-      showToast('🎤 持续监听中，请说话…', 'ok');
-    } catch (e) {
-      showToast('启动语音失败，请用Chrome浏览器', 'fail');
-    }
-  }
-}
-
-function stopListening() {
-  isListening = false;
-  const btn = document.getElementById('micBtn');
-  if (btn) btn.classList.remove('listening');
-}
-
 function setFeedback(msg, type) {
   const el = document.getElementById('feedback');
   el.textContent = msg; el.className = 'feedback-row ' + type;
@@ -930,51 +838,53 @@ resetGame();
 </script>
 
 <script>
-// ══════ 移动端键盘适配（独立脚本块，确保在 DOM 之后） ══════
+// ══════ 移动端键盘适配 ══════
 (function() {
   const inputSection = document.querySelector('.input-section');
-  if (!inputSection) return;
+  const answerInput = document.getElementById('answerInput');
+  if (!inputSection || !answerInput) return;
 
-  // 阻止页面被键盘顶上去：监听 touchmove 阻止过度滚动
-  document.body.addEventListener('touchmove', function(e) {
-    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-      // 输入框聚焦时，只允许在 visualViewport 范围内滚动
-      // 不阻止默认行为，让系统自己处理
-    }
-  }, { passive: true });
+  // 用 visualViewport 动态定位输入框在键盘正上方
+  function onViewportChange() {
+    if (document.activeElement !== answerInput) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    // 把输入框定位到 visualViewport 的底部
+    inputSection.style.position = 'fixed';
+    inputSection.style.bottom = 'auto';
+    inputSection.style.top = (vv.offsetTop + vv.height - inputSection.offsetHeight) + 'px';
+  }
 
-  // 用 visualViewport API 动态定位输入框
+  function resetPosition() {
+    inputSection.style.position = 'fixed';
+    inputSection.style.top = '';
+    inputSection.style.bottom = '0';
+  }
+
   if (window.visualViewport) {
-    function updateInputPosition() {
-      const vv = window.visualViewport;
-      // 输入框贴在 visualViewport 底部
-      inputSection.style.position = 'fixed';
-      inputSection.style.top = (vv.top + vv.height - inputSection.offsetHeight) + 'px';
-      inputSection.style.left = '0';
-      inputSection.style.width = '100%';
-    }
+    window.visualViewport.addEventListener('resize', onViewportChange);
+    window.visualViewport.addEventListener('scroll', onViewportChange);
 
-    // 输入框聚焦时开始监听
-    const answerInput = document.getElementById('answerInput');
-    let active = false;
-
-    answerInput.addEventListener('focus', function() {
-      active = true;
-      updateInputPosition();
-      window.visualViewport.addEventListener('resize', updateInputPosition);
-      window.visualViewport.addEventListener('scroll', updateInputPosition);
+    answerInput.addEventListener('focus', () => {
+      // 延迟一帧，等键盘弹出后再计算
+      setTimeout(onViewportChange, 100);
+      setTimeout(onViewportChange, 300);
     });
 
-    answerInput.addEventListener('blur', function() {
-      active = false;
-      // 恢复到正常底部
-      inputSection.style.position = 'fixed';
-      inputSection.style.top = '';
-      inputSection.style.bottom = '0';
-      window.visualViewport.removeEventListener('resize', updateInputPosition);
-      window.visualViewport.removeEventListener('scroll', updateInputPosition);
+    answerInput.addEventListener('blur', () => {
+      setTimeout(resetPosition, 100);
     });
   }
+
+  // 阻止 iOS Safari 弹性滚动把页面推上去
+  document.addEventListener('touchmove', function(e) {
+    if (document.activeElement === answerInput) {
+      // 输入框聚焦时阻止过度滚动
+      if (window.scrollY > 0) {
+        window.scrollTo(0, 0);
+      }
+    }
+  }, { passive: false });
 })();
 </script>
 </body>
