@@ -156,8 +156,8 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 10px 16px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  padding: 4px 16px;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom));
   background: var(--bg);
   z-index: 100;
   max-width: 500px;
@@ -192,14 +192,6 @@ body {
 }
 .submit-btn:active { transform: scale(.92); opacity: .85; }
 
-.feedback-row {
-  min-height: 20px; margin-top: 8px;
-  font-size: 12px; color: var(--txt-muted);
-  padding: 0 4px;
-  transition: color .2s;
-}
-.feedback-row.ok   { color: var(--mint); }
-.feedback-row.fail { color: var(--coral); }
 
 /* ── DIVIDER & UPLOAD ── */
 .divider-row {
@@ -370,7 +362,6 @@ input[type="file"] { display: none; }
       inputmode="text">
       <button class="submit-btn" onclick="checkAnswer()">↩</button>
   </div>
-  <div class="feedback-row" id="feedback"></div>
 </div>
 
 
@@ -658,7 +649,7 @@ function checkAnswer() {
     foundSet.add(match.word);
     draftSet.clear();
     inp.value = '';
-    setFeedback('✓ 正确！', 'ok');
+
     applyVisual(); popCells(match.cells); renderChips();
     showToast('✓ 正确！', 'ok');
 
@@ -671,7 +662,7 @@ function checkAnswer() {
   } else {
     const alreadyDone = placedWords.some(pw => foundSet.has(pw.word) && meaningMatch(pw.meanings, val));
     const msg = alreadyDone ? '已经找过了 ✓' : '没有匹配，再想想~';
-    setFeedback(msg, 'fail');
+
     showToast(msg, 'fail');
     inp.classList.add('shake');
     setTimeout(() => inp.classList.remove('shake'), 400);
@@ -684,12 +675,7 @@ document.getElementById('answerInput').addEventListener('keydown', e => {
 });
 document.getElementById('answerInput').addEventListener('input', bumpIdle);
 
-function setFeedback(msg, type) {
-  const el = document.getElementById('feedback');
-  el.textContent = msg; el.className = 'feedback-row ' + type;
-  clearTimeout(setFeedback._t);
-  setFeedback._t = setTimeout(() => { el.textContent = ''; el.className = 'feedback-row'; }, 2500);
-}
+
 
 // ══════ TOAST ══════
 let toastTimer;
@@ -791,7 +777,7 @@ function resetGame() {
   document.getElementById('overlay').classList.remove('show');
   foundSet.clear(); draftSet.clear();
   document.getElementById('answerInput').value = '';
-  document.getElementById('feedback').textContent = '';
+
   paused = false; document.getElementById('pauseBtn').textContent = '⏸';
 
   const shuffled = [...wordLib].sort(() => Math.random() - .5).slice(0, 16);
