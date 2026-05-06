@@ -49,7 +49,7 @@
 
 ## 词库说明
 
-游戏内置 29 个常用词作为默认词库，在 HTTP 环境下会自动加载同目录的 CET-4 高频词库（1500）（`cet4-high-frequency-words.csv`）。
+游戏内置 29 个常用词作为默认词库，在 HTTP 环境下会自动加载同目录的 CET-4 高频词库（`cet4-high-frequency-words.csv`，共 1640 词）。
 
 ### 自定义 CSV 格式
 
@@ -72,15 +72,16 @@ ability,n. 能力，才能
 
 ## 技术实现
 
-整个游戏是一个**单文件 `index.html`**（约 28 KB，877 行），无 npm、无打包工具、无框架。
+整个游戏是一个**单文件 `index.html`**，无 npm、无打包工具、无框架。
 
 | 方面 | 实现方式 |
 |---|---|
 | 单词放置 | 回溯算法，每个单词最多尝试 400 次，长单词优先放置 |
 | 界面渲染 | 纯 DOM + CSS Grid + CSS 自定义属性 |
+| 视觉效果 | 深蓝渐变背景、浮空药丸式顶栏、圆角发光棋盘、毛玻璃输入区域 |
 | 字体 | Google Fonts（Righteous、Space Mono、Noto Sans SC）|
-| 移动端键盘适配 | `visualViewport` API，键盘弹出时输入框自动跟随 |
-| 离线使用 | 支持添加到手机桌面作为 PWA 应用使用 |
+| 移动端键盘适配 | `visualViewport` API + `position: fixed`，输入框始终贴在键盘正上方，棋盘保持不动 |
+| 离线使用 | 支持添加到手机桌面，全屏启动 |
 
 ### 本地运行
 
