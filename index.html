@@ -362,7 +362,7 @@ input[type="file"] { display: none; }
     <div class="score-label">已找到</div>
     <div class="score-num" id="scoreDisplay">0 <span>/ 0</span></div>
   </div>
-  <div class="timer-pill" id="timer">03:00</div>
+  <div class="timer-pill" id="timer">05:00</div>
 </div>
 
 <!-- GRID -->
@@ -427,7 +427,7 @@ input[type="file"] { display: none; }
 <script>
 // ══════ CONFIG ══════
 const GRID_SIZE  = 10;
-const TOTAL_TIME = 180;
+const TOTAL_TIME = 300;
 
 // 难度配置：简单 5s，中等 10s，困难 20s
 const DIFFICULTY = {
@@ -647,10 +647,35 @@ gridEl.addEventListener('touchmove', e => {
 document.addEventListener('touchend', () => { isDragging = false; });
 
 // ══════ SYNONYM MATCH ══════
+// 规范化：去掉括号英文说明、音标、英文残留、标点和数字
+function normalizeMeaning(s) {
+  return s
+    .replace(/\([^)]*\)/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/[a-zA-Zˈˌ]+/g, '')
+    .replace(/[，,、；;。！？\d\s]+/g, '');
+}
+
 function meaningMatch(meanings, input) {
-  const v = input.trim();
-  if (!v) return false;
-  return meanings.some(m => m === v || m.includes(v) || v.includes(m));
+  const raw = input.trim();
+  if (!raw) return false;
+
+  const v = normalizeMeaning(raw);
+  if (!v || v.length < 1) return false;
+
+  return meanings.some(m => {
+    // 二次拆分：防止 parseCET4Meanings 没拆干净（如 "放弃，抛弃" 还在一条里）
+    const parts = m.split(/[，,、；;。！？|]+/).filter(Boolean);
+    return parts.some(p => {
+      const np = normalizeMeaning(p);
+      if (!np) return false;
+      if (np === v) return true;
+      // 包含匹配要求输入至少 2 字，避免单字如 "一" 误判
+      if (v.length >= 2 && v.includes(np)) return true;
+      if (v.length >= 2 && np.includes(v)) return true;
+      return false;
+    });
+  });
 }
 
 // ══════ CHECK ANSWER ══════
